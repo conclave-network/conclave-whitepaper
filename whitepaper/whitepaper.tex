@@ -1,0 +1,140 @@
+\documentclass{article}
+\title{Conclave: Making Bitcoin Scale and be Useful}
+\author{N. P. O'Donnell}
+\begin{document}
+\maketitle
+\begin{abstract}
+A second layer built atop BTC's base chain offering fast, cheap transactions including transactions to and from the 
+base chain, even if the payee is offline. Deposited funds are locked in multi-signature outputs on the base chain while
+micro-payment transactions happen on the second layer. Participants are rewarded with points for withdrawals they sign, 
+and points take a long time to accumulate. Collected fees are regularly distributed to participants in proportion to 
+their points. Participants caught behaving dishonestly lose all their points and must start again.
+\end{abstract}
+
+\section{Background}
+
+Some argue the crypto-currency bubble of 2017, in which BTC saw its all-time-high of \$20k, burst because the transaction throughput limit of 7 TPS was reached. Whether this is true or not, few would argue that BTC's transaction throughput is satisfactory, given the ever-growing reach of BTC.
+
+\section{Proposed Solution}
+
+Conclave proposes to solve the scaling problem by re-implementing the Bitcoin protocol on a layer-two chain, and providing on and off ramps to the layer-one chain, enabling users to seamlessly transfer bitcoin inter-chain. A payer can send a transaction then go offline immediately, and payees do not need to be online when receiving funds. From a user perspective, the protocol is simple and lightweight, yet secure, and has more in common with Bitcoin's original ``post-and-forget" design, than complex interactive protocols such as LN. \\
+
+\section{Proof-of-Trust}
+
+\textit{Proof-of-trust} (PoT) is Conclave's base security mechanism. Each participant in a PoT system has a positive real number associated with it known as its \textit{trust score} (or simply \textit{trust}). Participants with zero trust scores have not done anything to prove that they are productive or trustworthy. Nodes with nonzero trust scores have shown some measure of consistent positive, honest behaviour for a sizeable period and have never \textit{been proven} to have behaved dishonestly.
+
+\subsection{Earning Trust}
+
+Upon joining a PoT system, a node begins with a trust score of $0$, and must perform some useful action(s) in order to earn trust. In Conclave, there is one such action: signing \textit{withdrawal transactions} on the base chain. To be eligible to do this, the node must be one of the $m$ \textit{trustees} of a \textit{funding transaction}. Any node who is a trustee of a withdrawal transaction can increase its trust score when the opportunity arises to sign an exit transaction, which motivates them to stay online. The trust score of a node $N$ is calculated by the formula:
+
+\[trust_N = \sum_{i=1}^n\frac{1}{t_i - t_0}\]
+Where:
+\begin{itemize}
+	\item $n$ is the number of withdrawal transactions $N$ has signed in its lifetime.
+	\item $t_i$ is the time when the $i$th UTXO for which $N$ was a trustee, was created.
+	\item $t_0$ is the time of the inception transaction.
+\end{itemize}
+
+\subsection{Losing Trust}
+
+A node's trust score can stay the same or increase, but never decrease. If a node breaks any of the \textit{trust rules}, it loses all trust points and is \textit{blacklisted}.
+
+\subsection{Trust Rules}
+
+The \textit{trust rules} are a set of rules which, if broken by a participant, result in that participant being blacklisted. Breaches of the trust rules include:
+\begin{itemize}
+	\item Spending a UTXO outside of the rules of the protocol.
+	\item Sending provably false information to a peer or to a client.
+	\item Attempting to claim a reward with a false \textit{proof-of-storage}.
+\end{itemize}
+	
+
+\subsection{TVRs}
+
+\subsection{Community Signatures}
+
+\subsection{Blacklisting}
+
+\subsubsection{Self-Blacklisting}
+
+\subsection{Non-Transferability of Trust}
+
+\section{The Conclave Network}
+
+\subsection{Network Parameters}
+
+\subsection{NPATs}
+
+\subsection{Inception Transaction}
+
+\section{Transactions}
+
+\subsection{Deposits}
+
+\subsection{Withdrawals}
+
+\subsection{``Regular" Transactions}
+
+\section{Blockchain Design}
+
+\subsection{Base Chain Tracking}
+
+\subsection{Sharding Model}
+
+``Store-as-much-as-you-can", describe math of keying
+
+\subsection{Availability}
+
+Permissionless nature, redundancy, data-for-sale
+
+\subsection{Durability}
+
+Proof-of-storage, incentive to store, redundancy
+
+\subsection{Correctness}
+
+Tx Verification, Fear of blacklisting
+
+\subsection{Immutability}
+
+\subsection{Consistency}
+
+Metablocks, Hashchains
+
+\section{Rewards}
+
+\section{Proof-of-Storage}
+
+\section{Possible Attacks}
+
+Here we discuss some possible attacks against Conclave.
+
+\subsection{Colluding Signers Attack}
+
+A \textit{colluding signers attack} (CSA) is an attack where trustees entrusted to a Conclave-controlled output collude to spend the output outside the rules of the protocol. \\
+
+CSAs can not be prevented but are strongly de-incentivised at the protocol level by ensuring that it makes no economic sense to partake in one. More precisely, we make sure no subset of $m$ trustees exists in the $n$ trustees of a deposit output such that the $m$ trustees would make less from their rewards than the value of the output in a short amount of time. \\
+
+The ``short amount of time" is known as the \textit{contentment period}
+
+
+
+\subsection{Sybil Attack}
+
+A sybil attack is where a malicious actor creates a large number of false identities in order to gain a disproportionately large influence. Conclave nodes are identified by their public keys alone, so  a new identity can be created trivially by creating a new key pair, meaning many identities can be created at virtually zero cost. The degree to which a node is trusted is proportional to the node's trust score, and new nodes have zero trust scores so will not be trusted initially. No amount of zero-trust nodes can influence the network, therefore sybil attacks involving only zero-trust nodes are impossible. \\
+
+But what about sybil attacks involving nodes with non-zero trust scores ? Building up trust is a time-consuming process, and a sybil attacker would need to do so for a number of nodes - enough to eventually atttack the network. A successful attack would entail multiple nodes controlled by a single attacker gaining enough trust to be able to create community signatures. Once this happens, the attacker could manipulate network parameters at will, effectively taking control of the network. \\
+
+While this sounds like a plausable scenario, we need to consider the motivation behind such an attack, and what is likely to happen if such an attack were to occur. The primary motive behind most attacks on blockchains is money. If a sybil attacker's motive was money and they planned on building up enough trust among their nodes to steal a UTXO with a CSA, it's unlikely that this would be a financially sound choice compared with the alternative of behaving honestly. \textit{See the previous section for a more thorough explanation of CSAs}. \\
+
+If the attacker's motivation is to take control of the network by making \textit{obviously bad} network parameter updates, these updates will quickly be noticed by vigilant observers and an emergency fix in the codebase which blacklists the attackers node IDs would be deployed by creating a hard-coded NPAT in the NPAT history which does not exist in the blockchain, fooling the node into thinking it's processed an NPAT just before the attacker's first attack NPAT. The hard-coded NPAT would blacklist the attacker's node IDs, causing the attacker's NPATs to become invalid. \\
+
+This is a highly unlikely scenario but if it were to happen, we show here that recovery would be quick and straightforward.
+
+\subsection{Lying}
+
+All responses sent by network participants to both clients and peers must be signed together with the associated request. If the requestor thinks the responder has lied to them, the requestor may create and broadcast a TVR, which includes the signed request and response. If the community endorses that TVR, the response is thusly deemed a lie by the network and the responder is blacklisted. This motivates responders not to lie.
+
+\section{Conclusion}
+
+\end{document}
