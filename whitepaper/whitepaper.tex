@@ -17,15 +17,17 @@ Some argue the crypto-currency bubble of 2017, in which BTC saw its all-time-hig
 
 \section{Proposed Solution}
 
-Conclave proposes to solve the scaling problem by re-implementing the Bitcoin protocol on a layer-two chain, and providing on and off ramps to the layer-one chain, enabling users to seamlessly transfer bitcoin inter-chain. A payer can send a transaction then go offline immediately, and payees do not need to be online when receiving funds. From a user perspective, the protocol is simple and lightweight, yet secure, and has more in common with Bitcoin's original ``post-and-forget" design, than complex interactive protocols such as LN. \\
+Conclave proposes to solve the scaling problem by re-implementing the Bitcoin protocol on a layer-two chain, and providing on and off ramps from the layer-one chain, enabling users to seamlessly transfer bitcoin inter-chain. A payer can send a transaction then go offline immediately, and payees do not need to be online when receiving funds. From a user perspective, the protocol is simple and lightweight, yet secure, and has more in common with Bitcoin's original ``post-and-forget" design, than complex interactive protocols such as LN. \\
 
 \section{Proof-of-Trust}
 
-\textit{Proof-of-trust} (PoT) is Conclave's base security mechanism. Each participant in a PoT system has a positive real number associated with it known as its \textit{trust score} (or simply \textit{trust}). Participants with zero trust scores have not done anything to prove that they are productive or trustworthy. Nodes with nonzero trust scores have shown some measure of consistent positive, honest behaviour for a sizeable period and have never \textit{been proven} to have behaved dishonestly.
+\textit{Proof-of-trust} (PoT) is Conclave's primary security mechanism. Each participant in a PoT system has a positive real number associated with it called a \textit{trust score} (or simply \textit{trust}). Upon joining the PoT network, a new participant begins with a trust score of zero, which means they have not yet performed any actions which show evidence they are productive or trustworthy. Participants with a trust score greater than zero have shown some measure of positive, honest behaviour and have never \textit{been proven} to have behaved dishonestly. The greater a participant's trust score, the more trustworthy they are deemed to be.
 
 \subsection{Earning Trust}
 
-Upon joining a PoT system, a node begins with a trust score of $0$, and must perform some useful action(s) in order to earn trust. In Conclave, there is one such action: signing \textit{withdrawal transactions} on the base chain. To be eligible to do this, the node must be one of the $m$ \textit{trustees} of a \textit{funding transaction}. Any node who is a trustee of a withdrawal transaction can increase its trust score when the opportunity arises to sign an exit transaction, which motivates them to stay online. The trust score of a node $N$ is calculated by the formula:
+Upon joining a PoT system, a participant begins with a trust score of $0$. To earn trust, the participant must perform some useful actions, and proof of those actions must be freely available to all other participants to see, because trust scores are indepentantly calculated by all participants. \\
+
+The Conclave protocol nominates just one action can which can earn a participant trust: signing \textit{withdrawal transactions} on the base chain. To be eligible to do this, the participant must first be one of the $m$ \textit{trustees} of a \textit{funding transaction}. Any participant who is a trustee of a withdrawal transaction can increase their trust score by signing an exit transaction when the opportunity arises do so. This motivates them to stay online for as long as possible. The trust score of a participant $N$ is calculated by the formula:
 
 \[trust_N = \sum_{i=1}^n\frac{1}{t_i - t_0}\]
 Where:
@@ -37,7 +39,7 @@ Where:
 
 \subsection{Losing Trust}
 
-A node's trust score can stay the same or increase, but never decrease. If a node breaks any of the \textit{trust rules}, it loses all trust points and is \textit{blacklisted}.
+A participant's trust score can stay the same or increase, but never decrease. If a participant breaks any of the \textit{trust rules}, it loses all trust points and is \textit{blacklisted}.
 
 \subsection{Trust Rules}
 
@@ -48,12 +50,20 @@ The \textit{trust rules} are a set of rules which, if broken by a participant, r
 	\item Attempting to claim a reward with a false \textit{proof-of-storage}.
 \end{itemize}
 	
-
-\subsection{TVRs}
-
 \subsection{Community Signatures}
 
+A community signature (CS) is a set of individual signatures of members of a PoT system, on a single message, which meets certain criteria:
+
+\begin{enumerate}
+	\item The summed trust of the signatories is at or above a certain bound. (\textit{MinTrust})
+	\item The number of signatories is below a certain bound. (\textit{MaxSigners})
+\end{enumerate}
+
+The CS, together with the message it endorses is published to the bitcoin blockchain giving it an implicit timestamp. Since each community member's trust score is also purely derived from data on the blockchain, one can be certain about the validity of a CS once it's on the blockchain. The CS is valid if and only if it is valid \textit{at the position where it appears on the blockchain}.\\
+
 \subsection{Blacklisting}
+
+If a participant is blacklisted, his trust score is reduced to zero and may no longer participate in the PoT network. A blacklisted participant should not be named as a trustee for any future deposit transaction, but still may sign withdrawal transactions for which it was a trustee, but will earn no trust points. Once blacklisted, a participant can not be un-blacklisted.
 
 \subsubsection{Self-Blacklisting}
 
@@ -61,15 +71,48 @@ The \textit{trust rules} are a set of rules which, if broken by a participant, r
 
 \section{The Conclave Network}
 
+\textit{The Conclave network} comprises the collection of participants (or nodes) and the interactions between them.
+
 \subsection{Network Parameters}
+
+The network parameters are a set of key-value data which affect the behaviour of the network.
 
 \subsection{NPATs}
 
+An \textit{NPAT} is a \textit{network parameter adjustment transaction}. 
+
 \subsection{Inception Transaction}
+
+The first NPAT is known as the \textit{inception transaction}. It gives the initial values of the network parameters. It also implicitly defines a zero trust score for all network participants. The CS parameters are also given initial values:
+
+\begin{enumerate}
+	\item \textit{MinTrust} is given an initial implicit value of zero.
+	\item \textit{MaxSigners} is given an initial implicit value of infinity.
+\end{enumerate}
 
 \section{Transactions}
 
+The term \textit{transaction} is somewhat overloaded in the world of blockchains. This is doubly true for Conclave since it manipulates two blockchains, each with their own transaction format. To describe how transactions work, I will begin by discussing the practical \textit{actions} which the user wishes to perform: \textit{deposits}, \textit{withdrawals}, and regular P2P payments, and explain how they are implemented in terms of \textit{transactions} on the Bitcoin and Conclave blockchains.
+
 \subsection{Deposits}
+
+A \textit{deposit} is where a user sends bitcoin from the Bitcoin network to the Conclave network. Each deposit involves exactly one transaction on the Bitcoin chain: the \textit{fund transaction} or \texttt{fundTx}, and exactly one transaction on the Conclave chain: the \textit{claim transaction} or \texttt{claimTx}. To make a deposit, a depositor pays a deposit amount $D$ into a P2WSH output, $O$, on the Bitcoin chain and some time later, may claim a value not exceeding $D$ on the Conclave chain, by broadcasting a claim transaction $C$ which proves that $O$ was broadcast with the intention of funding $C$ and $C$ only, and this decision was made before the fund transaction was broadcast. \\
+			
+			Functionally, a deposit is only concerned with one part of the fund transaction: the fund output, therefore it is possible for a single fund transaction to contain multiple fund outputs - each funding a different claim transaction. However a single claim transaction may only claim one fund output for itself. Each claim transaction includes a pointer to its fund output's location on the Bitcoin blockchain, known as its \textit{fundpoint}. A fundpoint is a standard ``outpoint" structure, consisting of a transaction ID and index. \\
+			
+			Before a claim transaction is broadcast claiming a particular fund output, the fund output will appear like any other P2WSH output. When the claim transaction is broadcast, together with the fundpoint, this reveals the fund output as such. When a node receives the claim transaction, it fetches the output located at the fundpoint, checks that it is a P2WSH output, then reconstructs the P2WSH redeem script known as the \textit{claim script}. The node then hashes the claim script and checks that the hash matches that of the fund output's \texttt{scriptPubKey}'s P2WSH script hash threby proving that the claim script, and thus the claim transaction, is the rightful claimant of the funds in the fund output. \\
+			
+			The structure of the claim script is as follows:
+			
+			\begin{center}
+				\texttt{<claimTxHash> drop <n> <trustee 1 pubkey> ... <trustee n pubkey> <m>}
+			\end{center}
+			
+			This is a standard multisignature script with the exception of the first two script elements, which push the \texttt{claimTxHash} on to the stack then pop it. The \texttt{claimTxHash} does not play any role in the logic of the script, however it needs to be there to cryptographically link the script to the claim transaction. Since the \texttt{claimTxHash} is a hash of all the fields of the claim transaction, the claim transaction can not be modified after the fund transaction is broadcast because then it would produce a different hash, breaking the cryptographic link with the fund output. \\
+			
+			There is no strict deadline imposed on a claimant for claiming a fund output, however if the fund output is very old by the time it is claimed, there may not be enough active trustees from the time it was created still on the network. If the fund output does not comply with the network's trust requirements \textit{at the time of claim}, it needs to be spent into a ``fresh" fund output before the claim is honoured. Once such an output is revealed to the network, the network will immediately try to spend it to a withdrawal transaction, as withdrawal transactions spend outputs in the order they appear in the blockchain, not the order in which they were claimed. However if the network cannot find $m$ active trustees to spend the output, it will be unspendable and the claim is lost.
+
+			
 
 \subsection{Withdrawals}
 
